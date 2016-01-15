@@ -73,9 +73,7 @@ def readsound(inFileName = 'soundings_july.txt'):
     # 'NKX San Diego Observations at'. Split the lines into individual
     # soundings.
     marker = re.compile(markerText)
-    print("debug: markerText",markerText)
     soundings = marker.split(thelines)
-    print("debug: len soundings is: ",len(soundings))
     #
     # Expressions that are used in the following loop.
     lineend = re.compile('\n')
@@ -100,8 +98,9 @@ def readsound(inFileName = 'soundings_july.txt'):
                 count += 1
                 theLine = newsplit[count]
         except IndexError:
-            print("no column header line found in sounding" \
-                  " %d\ncontents: %s" % (itemcount, item))
+            if itemcount > 0:  #item[0] is blank
+                print("no column header line found in sounding" \
+                      " %d\ncontents: %s" % (itemcount, item))
             continue
         count += 1
         theLine = newsplit[count]
@@ -150,8 +149,8 @@ def readsound(inFileName = 'soundings_july.txt'):
                     # Recompute the mixing ratio. This is done because due to only
                     # two digits accuracy in sounding.txt, the mixing ratio becomes
                     # 0.00 from time to time.
-                    es = esat(dataFields[3] + 273.15)*10.
-                    dataFields[5] = (con.eps*es/(dataFields[0] - es))*1.e3
+                    es = esat(dataFields[3] + 273.15)*0.01  #get vapor pressure from dewpoint in hPa
+                    dataFields[5] = (con.eps*es/(dataFields[0] - es))*1.e3   #g/kg
                     #
                     # Only store complete lines with 11 elements.
                     lineSave.append(dataFields)
