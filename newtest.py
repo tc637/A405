@@ -22,16 +22,10 @@ Pres [hPa] of the Lifted Condensation Level: 606.36
 Precipitable water [mm] for entire sounding: 0.33
 """
 testfull=testfull.strip()[:400]
-testfull="Station number"
-print(testfull)
-re_text='.+(num).+'
-the_re=re.compile(re_text,re.DOTALL)
-hit=the_re.findall("anumb",re.DOTALL)
-print(hit)
-line = 'Baker 1 2009-11-17       1223.0'
-re_text='(.+)\s+(\d{4}-\d{1,2}-\d{1,2})\s+(.+)'
-the_re=re.compile(re_text)
-print(the_re.findall(line))
+line = 'Station Baker 1 2009-11-17       1223.0'
+re_text='Station\snumber\:\s(.+)'
+the_re=re.compile(re_text,re.DOTALL|re.VERBOSE)
+print(the_re.findall(testfull))
 
 
 
