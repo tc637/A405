@@ -23,7 +23,11 @@ Precipitable water [mm] for entire sounding: 0.33
 """
 testfull=testfull.strip()[:400]
 line = 'Station Baker 1 2009-11-17       1223.0'
-re_text='Station\snumber\:\s(.+)'
+re_text="""
+           Station\snumber\:\s(\d{5,5})\n
+           \s+Observation\stime\:\s(.+)\n
+           \s+Sta.+?
+        """
 the_re=re.compile(re_text,re.DOTALL|re.VERBOSE)
 print(the_re.findall(testfull))
 
