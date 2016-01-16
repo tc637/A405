@@ -29,7 +29,9 @@ the_re=re.compile(re_text,re.DOTALL)
 hit=the_re.findall("anumb",re.DOTALL)
 print(hit)
 line = 'Baker 1 2009-11-17       1223.0'
-print(re.findall('(.+)\s+(\d{4}-\d{1,2}-\d{1,2})\s+(.+)', line))
+re_text='(.+)\s+(\d{4}-\d{1,2}-\d{1,2})\s+(.+)'
+the_re=re.compile(re_text)
+print(the_re.findall(line))
 
 
 
