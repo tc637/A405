@@ -24,7 +24,7 @@ url_template=("http://weather.uwyo.edu/cgi-bin/sounding?"
 
 
 re_text="""
-           Station\snumber\:\s(.+?)\n
+           .*Station\snumber\:\s(.+?)\n
            \s+Observation\stime\:\s(.+?)\n
            \s+Station\slatitude\:\s(.+?)\n
            \s+Station\slongitude\:\s(.+?)\n
@@ -96,25 +96,26 @@ def parse_data(data_text):
 if __name__ == "__main__":
 
     values=dict(region='samer',year='2013',month='2',start='0100',stop='2800',station='82965')
-    values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
-    values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
-    values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
+    #values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
+    #values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
+    #values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
 
     
 #naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
     url=url_template.format_map(values)
 
     do_web = True
+    backup_file='backup.txt'
     if do_web:
         html_doc = requests.get(url).text
         print(len(html_doc))
-        with open('out_ant.txt','w') as f:
+        with open(backup_file,'w') as f:
             f.write(html_doc)
         if len(html_doc) < 2000:
             print('debug: short html_doc, something went wrong:',html_doc)
             sys.exit(1)
     else:
-        with open('out_ant.txt','r') as f:
+        with open(backup_file,'r') as f:
             html_doc=f.read()
 
     soup=BeautifulSoup(html_doc,'html.parser')
