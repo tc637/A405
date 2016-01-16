@@ -4,9 +4,9 @@ import re
 import datetime
 from  datetime import timezone as tz
 import pandas as pd
+from collections import OrderedDict
 from a405thermo.thermlib import esat
 from a405thermo.thermlib  import constants as con
-from collections import OrderedDict
 import numpy as np
 import sys
 import h5py
@@ -36,13 +36,12 @@ header_re=re.compile(re_text,re.DOTALL|re.VERBOSE)
 
 def parse_header(header_text):
     header_text=header_text.strip()
-    # with open('header_only.txt','w') as f:
-    #     f.write(header_text)
-    # print('+++++++++{}'.format(header_text))
     the_match = header_re.match(header_text)
-    # print('match: ',the_match)
-    # print('matched groups: ',the_match.groups())
     the_id,string_time,lat,lon,elev=the_match.groups()
+    elev=elev.split('\n')[0]  #some soundings follow elev with Shoalwater, not Lifted
+    lat=float(lat)
+    lon=float(lon)
+    elev=float(elev)
     day,hour = string_time.strip().split('/')
     year=int(day[:2]) + 2000
     month=int(day[2:4])
@@ -92,32 +91,14 @@ def parse_data(data_text):
     df_out=pd.DataFrame.from_records(data_list,columns=header_names)
     return df_out,unit_names
 
-
-if __name__ == "__main__":
-
-    values=dict(region='samer',year='2013',month='2',start='0100',stop='2800',station='82965')
-    #values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
-    #values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
-    #values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
-
-    
-#naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
-    url=url_template.format_map(values)
-
-    do_web = True
-    backup_file='backup.txt'
-    if do_web:
-        html_doc = requests.get(url).text
-        print(len(html_doc))
-        with open(backup_file,'w') as f:
-            f.write(html_doc)
-        if len(html_doc) < 2000:
-            print('debug: short html_doc, something went wrong:',html_doc)
-            sys.exit(1)
-    else:
-        with open(backup_file,'r') as f:
-            html_doc=f.read()
-
+def make_frames(html_doc):
+    """
+      input: web page from wyoming upperair sounding site
+             http://weather.uwyo.edu/cgi-bin/sounding retrieved by
+             the requests module
+      output: attr_dict dictionary with ['header', 'site_id','longitude','latitude', 'elevation', 'units']
+              sound_dict soudning dictionary with sounding times as keys and sounding as dataframes
+    """  
     soup=BeautifulSoup(html_doc,'html.parser')
     keep=list()
     header= (soup.find_all('h2'))[0].text
@@ -132,10 +113,41 @@ if __name__ == "__main__":
         theDate,the_id,lat,lon,elev=parse_header(keep[count+1])    
         sounding_dict[theDate]=df
         
-    attr_dict=OrderedDict(units=';'.join(units),site_id=the_id,
+    attr_dict=dict(units=';'.join(units),site_id=the_id,
                    latitude=lat,longitude=lon,elevation=elev,
-                   history="written by test_requests.py",
-                   header = header)    
+                   header = header)
+    
+    return attr_dict,sounding_dict
+    
+
+
+if __name__ == "__main__":
+
+    values=dict(region='samer',year='2013',month='2',start='0100',stop='2800',station='82965')
+    #values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
+    #values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
+    #values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
+
+    
+#naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
+    url=url_template.format_map(values)
+
+    do_web = False
+    backup_file='backup.txt'
+    if do_web:
+        html_doc = requests.get(url).text
+        print(len(html_doc))
+        with open(backup_file,'w') as f:
+            f.write(html_doc)
+        if len(html_doc) < 2000:
+            print('debug: short html_doc, something went wrong:',html_doc)
+            sys.exit(1)
+    else:
+        with open(backup_file,'r') as f:
+            html_doc=f.read()
+
+    attr_dict,sounding_dict = make_frames(html_doc)
+    attr_dict['history']="written by test_requests.py"
     key_list=['header', 'site_id','longitude','latitude', 'elevation', 'units','history']
 
     name = 'out.h5'    
