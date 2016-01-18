@@ -16,6 +16,19 @@ import sys
 import h5py
 
 
+# We need to parse a set of lines that look like this:
+
+#                              Station number: 82965
+#                            Observation time: 110201/0000
+#                            Station latitude: -9.86
+#                           Station longitude: -56.10
+#                           Station elevation: 288.0
+#                             Showalter index: -0.37
+#                                Lifted index: -0.68
+
+# Here's a regular expresion that does that:
+
+
 re_text="""
            .*Station\snumber\:\s(.+?)\n
            \s+Observation\stime\:\s(.+?)\n
@@ -26,8 +39,8 @@ re_text="""
         """
 
 #
-# DOTALL say make . include \n
-# VERBOSE says ignore whitespace and comments within the regular expression
+# DOTALL says: make . include \n
+# VERBOSE says: ignore whitespace and comments within the regular expression
 #         to help make the expression more readable
 #
 header_re=re.compile(re_text,re.DOTALL|re.VERBOSE)
@@ -54,6 +67,21 @@ def parse_header(header_text):
     return theDate,the_id,lat,lon,elev
 
 def parse_data(data_text):
+    """
+      read lines with 11 numbers and convert to dataframe
+
+      data_text looks like:
+
+        -----------------------------------------------------------------------------
+           PRES   HGHT   TEMP   DWPT   RELH   MIXR   DRCT   SKNT   THTA   THTE   THTV
+            hPa     m      C      C      %    g/kg    deg   knot     K      K      K 
+        -----------------------------------------------------------------------------
+         1000.0    100                                                               
+          979.0    288   24.0   23.0     94  18.45      0      0  299.0  353.0  302.2
+          974.0    333   25.2   21.1     78  16.46    348      0  300.6  349.1  303.6
+          932.0    719   24.0   16.0     61  12.42    243      3  303.2  340.3  305.4
+          925.0    785   23.4   15.4     61  12.03    225      3  303.2  339.2  305.4
+    """
     all_lines=data_text.strip().split('\n')
     count=0
     theLine=all_lines[count]
@@ -124,7 +152,7 @@ def make_frames(html_doc):
 
 
 if __name__ == "__main__":
-
+    #test functions here
 
     url_template=("http://weather.uwyo.edu/cgi-bin/sounding?"
               "region={region:s}"
