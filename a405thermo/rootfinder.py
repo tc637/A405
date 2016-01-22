@@ -58,7 +58,7 @@ def fzero(the_func, root_bracket, *args, **parms):
         **parms is passed to brenth and can be xtol (allowable error) or maxiter (max number of iterations.)
         see module tests for usage
     """
-    answer=optimize.zeros.brenth(the_func, root_bracket[0], root_bracket[1], *args, **parms)
+    answer=optimize.zeros.brenth(the_func, root_bracket[0], root_bracket[1], args=args, **parms)
     return answer
     
 def runtests():
