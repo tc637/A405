@@ -9,7 +9,12 @@ from scipy import optimize
 def find_interval(func, x, *args):
     """
       starting from a 2% difference, move out from a 
-      pouint until func changes sign
+      point until func changes sign
+
+      input func(x,*args): function to zero over x, with optional arguments
+            x:  variable to search over for root of func(x,*args)
+      output
+            left,right  brackets for root 
     """
     if x == 0.:
         dx = 1./50.
@@ -36,6 +41,8 @@ def find_interval(func, x, *args):
 
 def fzero(the_func, root_bracket, *args, **parms):
     """
+        simple wrapper for optimize.zeros.brenth
+
         the_func is the function we wish to find the zeros of
         root_bracket is an initial guess of the zero location 
         root_bracket must be a sequence of two floats specifying a range 
@@ -44,7 +51,7 @@ def fzero(the_func, root_bracket, *args, **parms):
 
         *args contains any other arguments needed for the_func
         **parms is passed to brenth and can be xtol (allowable error) or maxiter (max number of iterations.)
-        see module testsfor usage
+        see module tests for usage
     """
     answer=optimize.zeros.brenth(the_func, root_bracket[0], root_bracket[1], *args, **parms)
     return answer
