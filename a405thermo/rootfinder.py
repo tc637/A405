@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 """
-  
+   Two convenience functions for rootfinding:
+
+   find_interval finds the nearest functin sign change to a point
+   for "well behaved" functions
+
+   fzero is a wrapper that simpifies calling  optimize.zeros.brenth
 
 """
 import numpy as np
