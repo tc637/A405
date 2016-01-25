@@ -12,9 +12,9 @@
 # put your cloned repository in /Users/phil/repos/A405
 # and it will be automatically added to sys.path
 #
-import site
+import site, os
 ip = get_ipython()
-a405_repo = r'{}\\repos\\A405'.format(ip.home_dir)
+a405_repo = r'{0:}{1:}repos{1:}A405'.format(ip.home_dir,os.path.sep)
 site.addsitedir(a405_repo)
 print('added {} to the path'.format(a405_repo))
 from IPython.core.display import display
