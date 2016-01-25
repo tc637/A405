@@ -296,7 +296,7 @@ print('read ipython config: {}'.format(__file__))
 # it is not applied if there are no more arguments on the line, and '2' for
 # 'full' autocall, where all callable objects are automatically called (even if
 # no arguments are present).
-c.InteractiveShell.autocall = 0
+c.InteractiveShell.autocall = 1
 
 #------------------------------------------------------------------------------
 # TerminalInteractiveShell configuration
