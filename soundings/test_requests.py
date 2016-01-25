@@ -133,11 +133,11 @@ if __name__ == "__main__":
     #values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
     #values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
     #values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
-    
-#naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
+    values=dict(region='naconf',year='2012',month='3',start='0100',stop='3100',station='72340')
+    #naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
     url=url_template.format_map(values)
 
-    do_web = False
+    do_web = True
     backup_file='backup.txt'
     if do_web:
         html_doc = requests.get(url).text

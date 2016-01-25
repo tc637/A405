@@ -1,5 +1,6 @@
 from collections import Iterable
 import numpy as np
+from a405thermo.constants import constants as c
 
 class constants:
    """ 
@@ -66,4 +67,117 @@ def esat(temp):
     if is_scalar:
         esatOut = esatOut[0]
     return esatOut
-   
+
+def find_theta(temp,press,wv=0):
+    """
+    theta(*args)
+
+    Computes potential temperature.
+    Allows for either temp,p or T,p,wv as inputs.
+    
+
+    Parameters
+    - - - - - -
+    temp : float
+        Temperature (K).
+    press : float
+        Pressure (Pa).
+
+
+    Returns
+    - - - -
+    thetaOut : float
+        Potential temperature (K).
+
+
+    Optional Parameters
+    - - - - - - - - -
+    wv : float, optional
+        Vapour mixing ratio (kg,kg). Can be appended as an argument
+        in order to increase precision of returned 'theta' value.
+    
+    
+    Raises
+    - - - -
+    NameError
+        If an incorrect number of arguments is provided.
+    
+    
+    References
+    - - - - - -
+    Emanuel p. 111 4.2.11
+
+
+    Examples
+    - - - - -
+    >>> theta(300., 8.e4) # Only 'temp' and 'p' are input.
+    319.72798180767984
+    >>> theta(300., 8.e4, wv=0.001) # 'temp', 'p', and 'wv' all input.
+    319.72309475657323
+    
+    """
+
+    power = c.Rd / c.cpd * (1. - 0.24 * wv);
+    thetaOut = temp * (c.p0 / press) ** power;
+    return thetaOut
+
+ 
+def convertSkewToTemp(xcoord, press, skew):
+    """
+    convertSkewToTemp(xcoord, press, skew)
+
+    Determines temperature from knowledge of a plotting coordinate
+    system and corresponding plot skew.
+    
+    Parameters
+    - - - - - -
+    xcoord : int
+        X coordinate in temperature plotting coordinates.
+    press : float
+        Pressure (hPa).
+    skew : int
+        Skew of a given coordinate system.
+
+    Returns
+    - - - -
+    Temp : float
+        Converted temperature in degC.
+
+    Examples
+    - - - - -
+    >>> convertSkewToTemp(300, 8.e4, 30)
+    638.6934574096806
+    
+    """
+    Temp = xcoord  + skew * np.log(press);
+    return Temp
+
+def convertTempToSkew(Temp, press, skew):
+    """
+    convertTempToSkew(Temp, press, skew)
+
+    Determines the transformed temperature in plotting coordinates.
+    
+    Parameters
+    - - - - - -
+    Temp : float
+        Temperature (degC)
+    press : float
+        Pressure (hPa).
+    skew : int
+        Designated skew factor of temperature.
+
+    Returns
+    - - - -
+    tempOut : float
+        Converted temperature (degC).
+
+    Examples
+    - - - - -
+    >>> convertTempToSkew(30., 8.e4, 30)
+    -308.69345740968055
+    
+    """
+    
+    tempOut = Temp - skew * np.log(press);
+    return tempOut
