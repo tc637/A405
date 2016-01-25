@@ -13,6 +13,9 @@
 # and it will be automatically added to sys.path
 #
 import site, os
+#
+# find ip.home_dir
+#
 ip = get_ipython()
 #
 # os.path.sep is '/' on unix and '\' on windows
