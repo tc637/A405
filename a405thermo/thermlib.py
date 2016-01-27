@@ -27,9 +27,9 @@ class constants:
              #       and pressure -- this is at 100kPa, 10degC
    rhol = 1000.
 
-def esat(temp):
+def find_esat(temp):
     """
-    esat(temp)
+    find_esat(temp)
 
     Calculates the saturation water vapor pressure over a flat
     surface of water at temperature 'temp'.
@@ -68,6 +68,50 @@ def esat(temp):
         esatOut = esatOut[0]
     return esatOut
 
+
+def zero_rs(temp,rsat,press):
+    """
+      find the saturation temperature for 
+      a given rsat,press, by rootfinding this zero
+      
+      input: temp (guess) (K)
+             rsat (kg/kg)
+             press (hPa)
+      output: residual
+      
+      see thompkins 2.20
+     
+    """
+    esat=find_esat(temp)*0.01  #convert to hPa
+    residual=rsat - c.eps*esat/(press - esat)
+    return residual
+
+def find_rsat(temp,press):
+    """
+       calculate the saturation mixing ratio at (temp,press)
+
+       input: temp (K)
+              press (Pa)
+        output: rsat (kg/kg)
+    """
+    esat = find_esat(temp)*0.01
+    rsat=c.eps*esat/(press - esat)
+    return rsat
+
+def zero_find_rs(tstart,rsat,press):
+    """
+       rootfind the temp that produces rsat at press.
+
+
+       input: temp (K)
+              rsat (kg/kg)
+              press (hPa)
+        output: temp (K)
+    """
+    brackets=rf.find_interval(zero_rs,tstart,rsat,press)
+    temp = rf.fzero(zero_rs,brackets,rsat,press)
+    return temp
+ 
 def find_theta(temp,press,wv=0):
     """
     theta(*args)
