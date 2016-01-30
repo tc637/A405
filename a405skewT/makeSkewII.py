@@ -5,11 +5,15 @@ import matplotlib.pyplot as plt
 from importlib import reload
 import a405thermo.thermlib
 reload(a405thermo.thermlib)
-from a405thermo.thermlib import convertTempToSkew,convertSkewToTemp,find_theta
+from a405thermo.thermlib import convertTempToSkew,convertSkewToTemp,find_theta,find_thetaes
 from a405thermo.constants import constants as c
 from a405thermo.thermlib import find_rsat
 
-def makeSkewWet(ax,skew=30):
+def find_corners(temps,press=1.e3,skew=30.):
+      corners=convertTempToSkew(temps, press, skew)
+      return list(corners)
+
+def makeSkewWet(ax,corners=[-30,25],skew=30):
       """       
       Usage:  makeSkew(ax)
       Input:  axis object
@@ -17,13 +21,15 @@ def makeSkewWet(ax,skew=30):
        skewT logp thermodiagram.
       Output: ax, skew
       """
-      yplot = range(1000,190,-10)
-      xplot = range(-300,-139)
+      yplot = range(1000,190,-10)  #
+      xcorners=find_corners(corners,skew=skew)
+      xplot = list(np.linspace(xcorners[0],xcorners[1],35))
       pvals = np.size(yplot)
       tvals = np.size(xplot)
       temp = np.zeros([pvals, tvals])
       theTheta = np.zeros_like(temp)
       the_rsat = np.zeros_like(temp)
+      theThetae = np.zeros([pvals, tvals])      
 
 
       # lay down a reference grid that labels xplot,yplot points 
@@ -35,18 +41,18 @@ def makeSkewWet(ax,skew=30):
       # taking y= -log(P) like W&H, I take y= +log(P) and
       # then reverse the y axis         
       
-      for i in yplot:
-            for j in xplot:
+      for presshPa in yplot:  #loop over pressures
+            for skewed in xplot:   #loop over skewed xcoords
                   # Note that we don't have to transform the y
                   # coordinate, as it is still pressure.
-                  iInd = yplot.index(i)
-                  jInd = xplot.index(j)
-                  temp[iInd, jInd] = convertSkewToTemp(j, i, skew)
+                  iInd = yplot.index(presshPa)
+                  jInd = xplot.index(skewed)
+                  temp[iInd, jInd] = convertSkewToTemp(skewed,presshPa, skew)
                   Tk = c.Tc + temp[iInd, jInd]
-                  pressPa = i * 100.
+                  pressPa = presshPa * 100.
                   theTheta[iInd, jInd] = find_theta(Tk, pressPa)
                   the_rsat[iInd, jInd]= find_rsat(Tk, pressPa)
-                  
+                  theThetae[iInd, jInd] = find_thetaes(Tk, pressPa)
       #
       # Contour the temperature matrix.
       #
@@ -54,9 +60,8 @@ def makeSkewWet(ax,skew=30):
       # First, make sure that all plotted lines are solid.
       mpl.rcParams['contour.negative_linestyle'] = 'solid'
       tempLabels = range(-40, 50, 10)
-      tempLevs = ax.contour(xplot, yplot, temp, tempLabels, \
+      ax.contour(xplot, yplot, temp, tempLabels, \
                             colors='k')
-
       #
       # contour theta
       #
@@ -67,10 +72,11 @@ def makeSkewWet(ax,skew=30):
       # contour rsat
       #
       rsLabels =[0.1,0.25,0.5,1,2,3] + list(range(4, 20, 2)) + [20,24,28]
-      rsLabels = [10]
-      ax.contour(xplot, yplot, the_rsat*1.e3, levels=rsLabels, colors='g', linewidths=.5)
-      print(the_rsat)
+      rsLevs=ax.contour(xplot, yplot, the_rsat*1.e3, levels=rsLabels, colors='g', linewidths=.5)
 
+      thetaeLabels = np.arange(250, 410, 10)
+      thetaeLevs = ax.contour(xplot, yplot, theThetae, thetaeLabels, \
+                        colors='r') 
       #
       # Customize the plot
       #
@@ -96,7 +102,7 @@ def makeSkewWet(ax,skew=30):
       #    
       
 
-      TempTickLabels = range(-15, 40, 5)
+      TempTickLabels = range(-30, 40, 5)
 
       TempTickCoords = TempTickLabels
       skewTickCoords = convertTempToSkew(TempTickCoords, 1.e3, skew)
@@ -113,18 +119,25 @@ def makeSkewWet(ax,skew=30):
       ovrlp = True # Handle for 'inline'. Any integer other than 0
                 # creates a white space around the label.
                 
-      tempLevs.clabel(inline=ovrlp, inline_spacing=0,fmt='%2d', fontsize=fntsz,use_clabeltext=True)
-      thetaLevs.clabel(inline=ovrlp, inline_spacing=0,fmt='%5d', fontsize=fntsz,use_clabeltext=True)
-      
+      #tempLevs.clabel(inline=ovrlp, inline_spacing=0,fmt='%2d', fontsize=fntsz,use_clabeltext=True)
+      thetaLevs.clabel(inline=ovrlp, inline_spacing=0,fmt='%3d', fontsize=fntsz,use_clabeltext=True)
+      rsLevs.clabel(inline=ovrlp, inline_spacing=0, fmt='%3.2g', fontsize=fntsz,use_clabeltext=True)
+      thetaeLevs.clabel(thetaeLabels, inline_spacing=0, inline=ovrlp, fmt='%5g', fontsize=fntsz,use_clabeltext=True)
+
       ax.invert_yaxis()
-      ax.figure.canvas.draw()
+      #ax.figure.canvas.draw()
       return ax,skew
 
+      
 
 if __name__== "__main__":
       plt.close('all')
-      fig,ax = plt.subplots(1,1)
-      ax,skew = makeSkewWet(ax)
+      fig,ax = plt.subplots(1,1,figsize=(12,10))
+      corners=[-10,25]
+      ax,skew = makeSkewWet(ax,corners=corners,skew=25)
+      print(skew)
+      xcorners=find_corners(corners,skew=skew)
+      ax.set(ylim=(1000,300),xlim=xcorners)
       plt.show()
       
       
