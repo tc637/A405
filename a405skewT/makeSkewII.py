@@ -135,7 +135,7 @@ if __name__== "__main__":
       fig,ax = plt.subplots(1,1,figsize=(12,10))
       corners=[-10,25]
       ax,skew = makeSkewWet(ax,corners=corners,skew=25)
-      print(skew)
+      print('skew= ',skew)
       xcorners=find_corners(corners,skew=skew)
       ax.set(ylim=(1000,300),xlim=xcorners)
       plt.show()
