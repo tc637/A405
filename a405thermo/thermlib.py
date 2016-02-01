@@ -10,7 +10,6 @@ import doctest
 
 from a405thermo.constants import constants as c
 from a405thermo import rootfinder as rf
-from a405utils.helper_funs import test_scalar
 import numpy.testing as ntest
 np.set_printoptions(precision=4)
 
@@ -45,8 +44,6 @@ class constants:
 
 def find_esat(temp):
     """
-    find_esat(temp)
-
     Calculates the saturation water vapor pressure over a flat
     surface of water at temperature 'temp'.
 
@@ -88,55 +85,93 @@ def find_esat(temp):
     return esatOut
 
 
-def zero_rs(temp,rsat,press):
+def find_resid_rsat(Tguess,rsat,press):
     """
-      find the saturation temperature for 
-      a given rsat,press, by rootfinding this zero
-      
-      input: temp (guess) (K)
-             rsat (kg/kg)
-             press (hPa)
 
-      output: residual
+   Calculate residual between target rsat and guess to
+   rootfind saturation temperature for constant rsat   
+   
+   Parameters
+   ----------
       
-      see thompkins 2.20
+   Tguess: float
+           (K) guess temperature from rootfinder 
+
+   rsat:   float
+           (kg/kg) target saturation mixing ratio
+            
+   press:  float
+           (hPa) pressure level for rootfind
+
+   Returns
+   ------- 
+   
+   residual: float
+             (kg/kg) differnce between target and guess rsat
+
+   Reference
+   ---------
+      
+   see thompkins 2.20
      
     """
-    esat=find_esat(temp)*0.01  #convert to hPa
+    esat=find_esat(Tguess)*0.01  #convert to hPa
     residual=rsat - c.eps*esat/(press - esat)
     return residual
 
 def find_rsat(temp,press):
     """
-       calculate the saturation mixing ratio at (temp,press)
+  
+   calculate the saturation mixing ratio (kg/kg) at (temp,press)
 
-       input: temp (K)
-              press (Pa)
+   Parameters
+   --------- 
+       
+   temp: float
+         temperature (K) 
 
-       output: rsat (kg/kg)
+   press: float
+         pressure (Pa)
+
+   Returns
+   -------
+       
+    rsat: float
+          satruation mixing ratio  (kg/kg)
     """
     esat = find_esat(temp)
     rsat=c.eps*esat/(press - esat)
     return rsat
 
-def zero_find_rs(Tstart,rsat,press):
+def tinvert_rsat(Tstart,rsat,press):
     """
-       rootfind the temp that produces rsat at press.
+    rootfind the temp that produces rsat at press.
 
-       input: temp (K)
-              rsat (kg/kg)
-              press (hPa)
+    Parameters
+    ----------
 
-        output: temp (K)
+    temp : float
+           temperature (K)
+
+    rsat : float
+           saturation mixing ratio (kg/kg)
+
+    press : float 
+            pressure (hPa)
+
+    Returns
+    -------
+
+    Tdew : temperature (K) at with air is saaturated
     """
-    brackets=rf.find_interval(zero_rs,Tstart,rsat,press)
-    temp = rf.fzero(zero_rs,brackets,rsat,press)
+    brackets=rf.find_interval(find_resid_rsat,Tstart,rsat,press)
+    temp = rf.fzero(find_resid_rsat,brackets,rsat,press)
     return temp
  
-def find_theta(temp,press,wv=0):
+def find_theta(temp,press,rv=0):
     """
     Computes potential temperature.
-    Allows for either temp,p or T,p,wv as inputs.
+    Allows for either temp,p or T,p,rv as inputs.
 
     Parameters
     ----------
@@ -147,7 +182,7 @@ def find_theta(temp,press,wv=0):
     press : float
         Pressure (Pa).
 
-    wv : float, optional
+    rv : float, optional
         Vapour mixing ratio (kg,kg). Can be appended as an argument
         in order to increase precision of returned 'theta' value.
 
@@ -173,17 +208,46 @@ def find_theta(temp,press,wv=0):
 
     Examples
     --------
-    >>> find_theta(300., 8.e4) # Only 'temp' and 'p' are input.
+    >>> find_theta(300., 8.e4) # Only 'temp' and 'press' are input.
     319.72798180767984
-    >>> find_theta(300., 8.e4, wv=0.001) # 'temp', 'p', and 'wv' all input.
+    >>> find_theta(300., 8.e4, rv=0.001) # 'temp', 'press', and 'rv' all input.
     319.72309475657323
     
     """
 
-    power = c.Rd / c.cpd * (1. -0.24 * wv);
+    power = c.Rd / c.cpd * (1. -0.24 * rv);
     thetaOut = temp * (c.p0 / press) ** power;
     return thetaOut
 
+def convertTempToSkew(Temp, press, skew):
+    """
+    convertTempToSkew(Temp, press, skew)
+
+    Determines the transformed temperature in plotting coordinates.
+    
+    Parameters
+    ----------
+    Temp : float
+        Temperature (degC)
+    press : float
+        Pressure (hPa).
+    skew : int
+        Designated skew factor of temperature.
+
+    Returns
+    ----
+    tempOut : float
+        Converted temperature (degC).
+
+    Examples
+    --------
+    >>> convertTempToSkew(30., 800. , 30)
+    -170.53835183003781
+    
+    """
+    
+    tempOut = Temp - skew * np.log(press);
+    return tempOut
  
 def convertSkewToTemp(xcoord, press, skew):
     """
@@ -208,49 +272,18 @@ def convertSkewToTemp(xcoord, press, skew):
 
     Examples
     --------
-    >>> convertSkewToTemp(300, 8.e4, 30)
-    638.6934574096806
+    >>> convertSkewToTemp(-170.53835183003781, 800., 30)
+    30.0
     
     """
     Temp = xcoord  + skew * np.log(press);
     return Temp
 
-def convertTempToSkew(Temp, press, skew):
-    """
-    convertTempToSkew(Temp, press, skew)
-
-    Determines the transformed temperature in plotting coordinates.
-    
-    Parameters
-    ----------
-    Temp : float
-        Temperature (degC)
-    press : float
-        Pressure (hPa).
-    skew : int
-        Designated skew factor of temperature.
-
-    Returns
-    ----
-    tempOut : float
-        Converted temperature (degC).
-
-    Examples
-    --------
-    >>> convertTempToSkew(30., 8.e4, 30)
-    -308.69345740968055
-    
-    """
-    
-    tempOut = Temp - skew * np.log(press);
-    return tempOut
 
 def find_thetaes(Temp, press):
     """
-    find_thetaes(Temp, press)
-
     Calculates the pseudo equivalent potential temperature of an air
-    parcel.
+    parcel assuming saturation
 
     Parameters
     ----------
@@ -259,7 +292,6 @@ def find_thetaes(Temp, press):
     press : float
         Pressure (Pa).
 
-
     Returns
     ----
     thetaep : float
@@ -267,10 +299,9 @@ def find_thetaes(Temp, press):
 
 
     Notes
-    ---
-    It should be noted that the pseudo equivalent potential
-    temperature (thetaep) of an air parcel is not a conserved
-    variable.
+    -----
+    Empirical fit to Emanuel 4.7.8 -- neglects heat
+    capacity of liquid water and ice
 
 
     References
@@ -583,27 +614,54 @@ def tinvert_thetae(thetaeVal, rT, press):
     # The temperature has to be somewhere between thetae
     # (T at surface) and -40 deg. C (no ice).
     Tstart=c.Tc
-    brackets=rf.find_interval(find_Tchange,Tstart,thetaeVal,rT,press)
-    theTemp = rf.fzero(find_Tchange,brackets,thetaeVal,rT,press)
+    brackets=rf.find_interval(find_resid_thetae,Tstart,thetaeVal,rT,press)
+    theTemp = rf.fzero(find_resid_thetae,brackets,thetaeVal,rT,press)
     rv,rl = find_rvrl(theTemp, rT, press);
     return theTemp,rv,rl
 
- 
-def find_Tchange(Tguess, thetaeVal, rT, press):
-    rv, rl = find_rvrl(Tguess, rT, press);
-    tdGuess = find_Td(rv, press);
-    # Iterate on Tguess until this function is
-    # zero to within tolerance.
-    return thetaeVal - find_thetaep(tdGuess,Tguess,press);
+def find_resid_thetae(Tguess, thetaeVal, rT, press):
+   """
+   Calculate residual between target thetaeVal and guess to
+   rootfind temperature for constant thetae
+   
+   Parameters
+   ----------
+      
+   Tguess: float
+           (K) guess temperature from rootfinder 
 
-def find_Td(wv, press):
+   rsat:   float
+           (kg/kg) target saturation mixing ratio
+            
+   press:  float
+           (hPa) pressure level for rootfind
+
+   Returns
+   ------- 
+   
+   residual: float
+             (kg/kg) differnce between target and guess rsat
+
+   References
+   ----------
+      
+   see thompkins 2.20
+   """
+     
+   rv, rl = find_rvrl(Tguess, rT, press);
+   tdGuess = find_Td(rv, press);
+   # Iterate on Tguess until this function is
+   # zero to within tolerance.
+   return thetaeVal - find_thetaep(tdGuess,Tguess,press);
+
+def find_Td(rv, press):
     """
     Calculates the due point temperature of an air parcel.
 
     Parameters
     ----------
 
-    wv : float
+    rv : float
         Mixing ratio (kg/kg).
     press : float
         Pressure (Pa).
@@ -626,7 +684,7 @@ def find_Td(wv, press):
     Emanuel 4.4.14 p. 117
     
     """
-    e = wv * press / (c.eps + wv);
+    e = rv * press / (c.eps + rv);
     denom = (17.67 / np.log(e / 611.2)) - 1.;
     Td = 243.5 / denom;
     Td = Td + 273.15;
@@ -634,16 +692,19 @@ def find_Td(wv, press):
 
  
 def test_therm():
-    Tlcl, plcl =  find_lcl(280., 300., 8.e4)
-    ntest.assert_almost_equal(Tlcl,275.7625,decimal=3)
-    ntest.assert_almost_equal(plcl,59518.928,decimal=2)
-    ntest.assert_almost_equal(find_thetaep(280., 300., 8.e4),344.998307,decimal=5) # Parcel is unsaturated.
-    ntest.assert_almost_equal(find_thetaep(300., 280., 8.e4),321.53029,decimal=5) # Parcel is saturated.
-    ntest.assert_almost_equal(find_esat(300.),3534.51966,decimal=2)
-    ntest.assert_almost_equal(find_thetaes(300., 8.e4),412.9736,decimal=4)
-    ntest.assert_allclose(find_esat([300., 310.]),[3534.51966, 6235.53218])
-    ntest.assert_almost_equal(find_Tmoist(300., 8.e4),270.59590841970277)
-    ntest.assert_almost_equal(find_Tmoist(330., 8.e4), 282.92999,decimal=4)
+   """
+   execute unit tests for thermlib
+   """
+   Tlcl, plcl =  find_lcl(280., 300., 8.e4)
+   ntest.assert_almost_equal(Tlcl,275.7625,decimal=3)
+   ntest.assert_almost_equal(plcl,59518.928,decimal=2)
+   ntest.assert_almost_equal(find_thetaep(280., 300., 8.e4),344.998307,decimal=5) # Parcel is unsaturated.
+   ntest.assert_almost_equal(find_thetaep(300., 280., 8.e4),321.53029,decimal=5) # Parcel is saturated.
+   ntest.assert_almost_equal(find_esat(300.),3534.51966,decimal=2)
+   ntest.assert_almost_equal(find_thetaes(300., 8.e4),412.9736,decimal=4)
+   ntest.assert_allclose(find_esat([300., 310.]),[3534.51966, 6235.53218])
+   ntest.assert_almost_equal(find_Tmoist(300., 8.e4),270.59590841970277)
+   ntest.assert_almost_equal(find_Tmoist(330., 8.e4), 282.92999,decimal=4)
 
     
 if __name__ == "__main__":

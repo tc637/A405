@@ -1,3 +1,6 @@
+"""
+   construct a skewT - ln P diagram with rsat and thetaes lines
+"""
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -10,16 +13,55 @@ from a405thermo.constants import constants as c
 from a405thermo.thermlib import find_rsat
 
 def find_corners(temps,press=1.e3,skew=30.):
+      """
+        convert a pair of temperatures into skew plotting coordinates at a constant pressure level
+
+        Parameters
+        ----------
+
+        temps : [float]
+                xaxis corner temperatures (degC)
+
+        press : float
+                pressure level for skew conversion
+
+        skew  : float
+                coefficient to use in the tempToSkew conversion
+
+        Returns
+        -------
+
+        corners : [float]
+                x axis corners in plotting coordinates
+
+      """
       corners=convertTempToSkew(temps, press, skew)
       return list(corners)
 
 def makeSkewWet(ax,corners=[-30,25],skew=30):
       """       
-      Usage:  makeSkew(ax)
-      Input:  axis object
-       Takes any integer, creates figure(figNum), and plots a
-       skewT logp thermodiagram.
-      Output: ax, skew
+      draw a skew-T lnP diagram on an axis
+
+      Parameters
+      ----------
+      
+      ax : matplotlib.axes
+           matplotlib figure axis
+
+      corners : [float]
+                x axis temperature limits (degC)
+
+      skew : float
+
+             adjustable coefficient to make isotherms slope
+             compared to adiabats
+
+      Returns
+      -------
+      
+      ax : matplotlib.axes
+           the modified figure axis
+
       """
       yplot = range(1000,190,-10)  #
       xcorners=find_corners(corners,skew=skew)
@@ -126,18 +168,24 @@ def makeSkewWet(ax,corners=[-30,25],skew=30):
 
       ax.invert_yaxis()
       #ax.figure.canvas.draw()
+      xcorners=find_corners(corners,skew=skew)
+      ax.set(ylim=(1000,300),xlim=xcorners)
       return ax,skew
 
+def plot_test():
+      """
+      create test plot when module is run
+      """
+      fig,ax = plt.subplots(1,1)
+      corners=[-10,25]
+      ax,skew = makeSkewWet(ax,corners=corners,skew=25)
+      figname='plot_test_wet.png'
+      fig.canvas.print_figure(figname)
+      print('created {}'.format(figname))
+      return ax
       
 
 if __name__== "__main__":
-      plt.close('all')
-      fig,ax = plt.subplots(1,1,figsize=(12,10))
-      corners=[-10,25]
-      ax,skew = makeSkewWet(ax,corners=corners,skew=25)
-      print('skew= ',skew)
-      xcorners=find_corners(corners,skew=skew)
-      ax.set(ylim=(1000,300),xlim=xcorners)
-      plt.show()
+      plot_test()
       
       
