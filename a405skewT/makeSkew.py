@@ -1,4 +1,8 @@
+"""
+   construct a skewT - ln P diagram with dry adiabats
+"""
 import numpy as np
+import matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -10,11 +14,28 @@ from a405thermo.constants import constants as c
 
 def makeSkewDry(ax,skew=30):
       """       
-      Usage:  makeSkew(ax)
-      Input:  axis object
-       Takes any integer, creates figure(figNum), and plots a
-       skewT logp thermodiagram.
-      Output: ax, skew
+      draw a skew-T lnP diagram on an axis
+
+      Parameters
+      ----------
+      
+      ax : matplotlib.axes
+           matplotlib figure axis
+
+      skew : float
+
+             adjustable coefficient to make isotherms slope
+             compared to adiabats
+
+      Returns
+      -------
+      
+      ax : matplotlib.axes
+           the modified figure axis
+
+      skew : float
+             skew coefficient (K)
+
       """
       yplot = range(1000,190,-10)
       xplot = range(-300,-139)
@@ -105,12 +126,19 @@ def makeSkewDry(ax,skew=30):
       
       ax.invert_yaxis()
       ax.figure.canvas.draw()
-      return ax,skew
+      return ax, skew
 
-if __name__== "__main__":
-      plt.close('all')
+def plot_test():
+      """
+      create test plot when module is run
+      """
       fig,ax = plt.subplots(1,1)
       ax,skew = makeSkewDry(ax)
-      plt.show()
-      
+      figname='plot_test.png'
+      fig.canvas.print_figure(figname)
+      print('created {}'.format(figname))
+      return ax
+
+if __name__== "__main__":
+      ax = plot_test()
       

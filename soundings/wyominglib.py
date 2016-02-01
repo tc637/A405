@@ -9,7 +9,7 @@ import datetime
 from  datetime import timezone as tz
 import pandas as pd
 from collections import OrderedDict
-from a405thermo.thermlib import esat
+from a405thermo.thermlib import find_esat
 from a405thermo.thermlib  import constants as con
 import numpy as np
 import sys
@@ -46,6 +46,34 @@ re_text="""
 header_re=re.compile(re_text,re.DOTALL|re.VERBOSE)
 
 def parse_header(header_text):
+    """
+    Read a header returned by make_frames and
+    return station information
+
+    Parameters
+    ----------
+
+    header_text : str
+                  string containing wyoming header read with make_frames
+
+    Returns
+    -------
+
+    theDate : datetime
+              date of sounding
+                                  
+    the_id  : int
+              5 digit souding id
+
+    lat     : float
+              latitude (degrees North)
+
+    lon     : float
+              longitude (degrees east)
+    
+    elev    : float
+              station elevation (meters)
+    """
     header_text=header_text.strip()
     the_match = header_re.match(header_text)
     try:
@@ -67,6 +95,26 @@ def parse_header(header_text):
     return theDate,the_id,lat,lon,elev
 
 def parse_data(data_text):
+    """
+    Read a single sounding into a dataframe
+
+    Parameters
+    ----------
+
+    data_text : str
+                sounding text
+
+    Returns
+    -------
+
+    df_out : dataframe
+             11 column data frame with sounding values
+
+    unit_name : list
+                list of strings with name of units of each column
+    
+    """
+
     """
       read lines with 11 numbers and convert to dataframe
 
@@ -104,9 +152,9 @@ def parse_data(data_text):
             if len(dataFields) == 11:
                 try:
                     dataFields = [float(number) for number in dataFields]
-                    es = esat(dataFields[3] + 273.15)*0.01  #get vapor pressure from dewpoint in hPa
+                    es = find_esat(dataFields[3] + 273.15)*0.01  #get vapor pressure from dewpoint in hPa
                     dataFields[5] = (con.eps*es/(dataFields[0] - es))*1.e3   #g/kg
-                except VauleError:
+                except ValueError:
                     print('trouble converting dataFields to float')
                     print(dataFields)
                     sys.exit(1)
@@ -123,11 +171,24 @@ def parse_data(data_text):
 
 def make_frames(html_doc):
     """
-      input: web page from wyoming upperair sounding site
-             http://weather.uwyo.edu/cgi-bin/sounding retrieved by
-             the requests module
-      output: attr_dict dictionary with ['header', 'site_id','longitude','latitude', 'elevation', 'units']
-              sound_dict soudning dictionary with sounding times as keys and sounding as dataframes
+    turn an html page retrieved from the wyoming site into a dataframe
+
+    Parameters
+    ----------
+
+    html_doc : string
+               web page from wyoming upperair sounding site
+               http://weather.uwyo.edu/cgi-bin/sounding retrieved by
+               the requests module
+
+    Returns
+    -------
+
+    attr_dict : dict
+               attr_dict dictionary with ['header', 'site_id','longitude','latitude', 'elevation', 'units']
+              
+    sound_dict : dict  
+                 sounding dictionary with sounding times as keys and sounding as dataframes
     """  
     soup=BeautifulSoup(html_doc,'html.parser')
     keep=list()
@@ -149,10 +210,14 @@ def make_frames(html_doc):
     
     return attr_dict,sounding_dict
     
+def test_wyoming():
+    """
+    function to test downloading a sounding
+    from http://weather.uwyo.edu/cgi-bin/sounding and
+    creating an hdf file with soundings and attributes
 
-
-if __name__ == "__main__":
-    #test functions here
+    see the notebook newsoundings.ipynb for use
+    """
 
     url_template=("http://weather.uwyo.edu/cgi-bin/sounding?"
               "region={region:s}"
@@ -171,7 +236,7 @@ if __name__ == "__main__":
 #naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
     url=url_template.format_map(values)
 
-    do_web = False
+    do_web = True
     backup_file='backup.txt'
     if do_web:
         html_doc = requests.get(url).text
@@ -201,6 +266,8 @@ if __name__ == "__main__":
             f.attrs[key]=attr_dict[key]
         f.close()
 
+    print('hdf file {} written'.format(name))
+    print('reading attributes: ')
     with h5py.File(name,'r') as f:
         keys=f.attrs.keys()
         for key in keys:
@@ -210,6 +277,5 @@ if __name__ == "__main__":
                 pass
 
 
-
-
-
+if __name__ == "__main__":
+    test_wyoming()

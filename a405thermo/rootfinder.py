@@ -1,25 +1,31 @@
-#!/usr/bin/env python
 """
-   Two convenience functions for rootfinding:
-
-   find_interval finds the nearest functin sign change to a point
-   for "well behaved" functions
-
-   fzero is a wrapper that simpifies calling  optimize.zeros.brenth
-
+   Two convenience functions for rootfinding
 """
 import numpy as np
 from scipy import optimize
 
-def find_interval(func, x, *args):
+def find_interval(the_func, x, *args):
     """
-      starting from a 2% difference, move out from a 
-      point until func changes sign
+    starting from a 2% difference, move out from a 
+    point until the_func changes sign
 
-      input func(x,*args): function to zero over x, with optional arguments
-            x:  variable to search over for root of func(x,*args)
-      output
-            left,right  brackets for root 
+    Parameters
+    ----------
+
+    the_func : function
+               function that returns zero when on root
+    
+    x : float
+        argument to the_func
+
+    *args : tuple
+            additional arguments for the_func
+
+    Returns
+    -------
+
+    brackets : [left,right]
+               left,right  brackets for root 
     """
     if x == 0.:
         dx = 1./50.
@@ -33,9 +39,9 @@ def find_interval(func, x, *args):
     for i in range(maxiter):
         dx = dx*twosqrt
         a = x - dx
-        fa = func(a, *args)
+        fa = the_func(a, *args)
         b = x + dx
-        fb = func(b, *args)
+        fb = the_func(b, *args)
         if (fa*fb < 0.):
             failed=False
             break
@@ -46,22 +52,35 @@ def find_interval(func, x, *args):
 
 def fzero(the_func, root_bracket, *args, **parms):
     """
-        simple wrapper for optimize.zeros.brenth
+    simple wrapper for optimize.zeros.brenth
 
-        the_func is the function we wish to find the zeros of
-        root_bracket is an initial guess of the zero location 
-        root_bracket must be a sequence of two floats specifying a range 
-        (the_func must differ in sign when evaluated at these points)
-        use find_interval to spot a sign change and set the bracket
+    Parameters
+    ----------
 
-        *args contains any other arguments needed for the_func
-        **parms is passed to brenth and can be xtol (allowable error) or maxiter (max number of iterations.)
-        see module tests for usage
+    the_func : function
+               function that returns zero when on root
+
+    root_bracket : [left, right]
+               left and right x values that bracket a sign change
+
+    *args : tuple
+            additional arguments for the_func
+
+    **params: dict
+              additional parameters for optimize.zeros.brenth
+
+    Returns
+    -------
+
+    x value that produces the_func=0
     """
     answer=optimize.zeros.brenth(the_func, root_bracket[0], root_bracket[1], args=args, **parms)
     return answer
     
-def runtests():
+def test_rootfinder():
+    """
+    run unit tests for rootfinder
+    """
     the_zero=fzero(np.sin, [12,13])*180./np.pi  #expecting 720 degrees
     np.testing.assert_almost_equal(the_zero,720.)
     the_zero=fzero(np.sin,[18,20], xtol=1.e-300, maxiter=80)*180./np.pi
@@ -72,5 +91,5 @@ def runtests():
     
  
 if __name__=="__main__":
-    runtests()
+    test_rootfinder()
     
