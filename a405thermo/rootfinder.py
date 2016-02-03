@@ -4,6 +4,7 @@
 import numpy as np
 from scipy import optimize
 
+
 def find_interval(the_func, x, *args):
     """
     starting from a 2% difference, move out from a 
@@ -28,27 +29,27 @@ def find_interval(the_func, x, *args):
                left,right  brackets for root 
     """
     if x == 0.:
-        dx = 1./50.
+        dx = 1. / 50.
     else:
-        dx = x/50.
-        
+        dx = x / 50.
+
     maxiter = 40
     twosqrt = np.sqrt(2)
 
-    failed=True
+    failed = True
     for i in range(maxiter):
-        dx = dx*twosqrt
+        dx = dx * twosqrt
         a = x - dx
         fa = the_func(a, *args)
         b = x + dx
         fb = the_func(b, *args)
-        if (fa*fb < 0.):
-            failed=False
+        if (fa * fb < 0.):
+            failed = False
             break
     if failed:
         raise ValueError("Couldn't find a suitable range.")
     return (a, b)
-        
+
 
 def fzero(the_func, root_bracket, *args, **parms):
     """
@@ -74,22 +75,26 @@ def fzero(the_func, root_bracket, *args, **parms):
 
     x value that produces the_func=0
     """
-    answer=optimize.zeros.brenth(the_func, root_bracket[0], root_bracket[1], args=args, **parms)
+    answer = optimize.zeros.brenth(the_func,
+                                   root_bracket[0],
+                                   root_bracket[1],
+                                   args=args,
+                                   **parms)
     return answer
-    
+
+
 def test_rootfinder():
     """
     run unit tests for rootfinder
     """
-    the_zero=fzero(np.sin, [12,13])*180./np.pi  #expecting 720 degrees
-    np.testing.assert_almost_equal(the_zero,720.)
-    the_zero=fzero(np.sin,[18,20], xtol=1.e-300, maxiter=80)*180./np.pi
-    np.testing.assert_almost_equal(the_zero,1080.)
-    brackets=find_interval(np.sin,25)
-    the_zero=fzero(np.sin,brackets, xtol=1.e-300, maxiter=80)*180./np.pi
-    np.testing.assert_almost_equal(the_zero,1440.)
-    
- 
-if __name__=="__main__":
+    the_zero = fzero(np.sin, [12, 13]) * 180. / np.pi  #expecting 720 degrees
+    np.testing.assert_almost_equal(the_zero, 720.)
+    the_zero = fzero(np.sin, [18, 20], xtol=1.e-300, maxiter=80) * 180. / np.pi
+    np.testing.assert_almost_equal(the_zero, 1080.)
+    brackets = find_interval(np.sin, 25)
+    the_zero = fzero(np.sin, brackets, xtol=1.e-300, maxiter=80) * 180. / np.pi
+    np.testing.assert_almost_equal(the_zero, 1440.)
+
+
+if __name__ == "__main__":
     test_rootfinder()
-    
