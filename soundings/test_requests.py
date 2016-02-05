@@ -9,8 +9,8 @@ import datetime
 from  datetime import timezone as tz
 import pandas as pd
 from collections import OrderedDict
-from a405thermo.thermlib import esat
-from a405thermo.thermlib  import constants as con
+from a405thermo.thermlib import find_esat
+from a405thermo.constants  import constants as con
 import numpy as np
 import sys
 import h5py
@@ -70,7 +70,7 @@ def parse_data(data_text):
             if len(dataFields) == 11:
                 try:
                     dataFields = [float(number) for number in dataFields]
-                    es = esat(dataFields[3] + 273.15)*0.01  #get vapor pressure from dewpoint in hPa
+                    es = find_esat(dataFields[3] + 273.15)*0.01  #get vapor pressure from dewpoint in hPa
                     dataFields[5] = (con.eps*es/(dataFields[0] - es))*1.e3   #g/kg
                 except VauleError:
                     print('trouble converting dataFields to float')
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     #values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
     #values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
     #values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
-    values=dict(region='naconf',year='2012',month='3',start='0100',stop='3100',station='72340')
+    values=dict(region='naconf',year='2012',month='3',start='0100',stop='0212',station='72340')
     #naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
     url=url_template.format_map(values)
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     attr_dict['history']="written by test_requests.py"
     key_list=['header', 'site_id','longitude','latitude', 'elevation', 'units','history']
 
-    name = 'out.h5'    
+    name = 'single_littlerock.h5'    
     with pd.HDFStore(name,'w') as store:
         for key,value in sounding_dict.items():
             thetime=key.strftime("Y%Y_%b_%d_%HZ")

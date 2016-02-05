@@ -338,7 +338,42 @@ def find_thetaes(Temp, press):
         thetaep = 450
     return thetaep
 
+def find_Tv(temp, rvap, rl=0.):
+    """
+    Calculate the density (virtual) temperature
 
+
+    Parameters
+    ----------
+
+    temp : float or np.array
+        temperatue (K).
+
+    rvap: float or np.array
+        vapor  mixing ratio (kg/kg)
+
+    rl : float or np.array
+        liquid mixing ratio (kg/kg)
+
+    Returns
+    -------
+
+    Tv : float or np.array
+        density temperature (K).
+
+    References
+    ----------
+    Thompkins eq. 2.38
+
+
+    Examples
+    --------
+    >>> find_Tv(300.,1.e-2)# Parcel is unsaturated.
+    301.866
+    >>> find_Tv(280.,1.e-2, 1.e-3)  #Parcel is saturated
+    281.4616
+    """
+    return temp*(1 + c.eps*rvap - rl)
 
 def find_thetaet(Td, rt, T, p):
     """
@@ -734,6 +769,40 @@ def find_resid_thetae(Tguess, thetaeVal, rT, press):
     return thetaeVal - find_thetaep(tdGuess, Tguess, press)
 
 
+def find_buoy(adia_Tv,env_Tv):
+    """
+    Calculates the buoyancy given an parcel and environment virtural temp
+
+    Parameters
+    ----------
+
+    adia_Tv : float
+        density temperature of the parcel (K)
+    env_Tv : float
+        density temperature of environment (K)
+
+    Returns
+    -------
+
+    buoy : float
+        buoyancy (m/s/s)
+
+    Examples
+    --------
+
+    >>> find_buoy(286.,285.)
+    0.03438596491228071
+
+    References
+    ----------
+
+    Thompkins equation 3.3
+    
+    """
+    buoy=c.g0*(adia_Tv - env_Tv)/env_Tv
+    return buoy
+
+
 def find_Td(rv, press):
     """
     Calculates the due point temperature of an air parcel.
@@ -791,6 +860,8 @@ def test_therm():
     ntest.assert_allclose(find_esat([300., 310.]), [3534.51966, 6235.53218])
     ntest.assert_almost_equal(find_Tmoist(300., 8.e4), 270.59590841970277)
     ntest.assert_almost_equal(find_Tmoist(330., 8.e4), 282.92999, decimal=4)
+    ntest.assert_almost_equal(find_Tv(300.,1.e-2),301.866,decimal=3)
+    ntest.assert_almost_equal(find_Tv(280.,1.e-2, 1.e-3),281.4616,decimal=3)
 
 
 if __name__ == "__main__":
