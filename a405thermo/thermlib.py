@@ -769,6 +769,40 @@ def find_resid_thetae(Tguess, thetaeVal, rT, press):
     return thetaeVal - find_thetaep(tdGuess, Tguess, press)
 
 
+def find_buoy(adia_Tv,env_Tv):
+    """
+    Calculates the buoyancy given an parcel and environment virtural temp
+
+    Parameters
+    ----------
+
+    adia_Tv : float
+        density temperature of the parcel (K)
+    env_Tv : float
+        density temperature of environment (K)
+
+    Returns
+    -------
+
+    buoy : float
+        buoyancy (m/s/s)
+
+    Examples
+    --------
+
+    >>> find_buoy(286.,285.)
+    0.03438596491228071
+
+    References
+    ----------
+
+    Thompkins equation 3.3
+    
+    """
+    buoy=c.g0*(adia_Tv - env_Tv)/env_Tv
+    return buoy
+
+
 def find_Td(rv, press):
     """
     Calculates the due point temperature of an air parcel.
