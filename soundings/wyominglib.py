@@ -10,7 +10,7 @@ from  datetime import timezone as tz
 import pandas as pd
 from collections import OrderedDict
 from a405thermo.thermlib import find_esat
-import a405thermo.constants as con
+from a405thermo.constants import constants as con
 import numpy as np
 import sys
 import h5py
