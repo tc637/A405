@@ -1,3 +1,5 @@
+import os
+
 def test_scalar(*args):
     """
       return true if every argument is a scalar
@@ -6,3 +8,5 @@ def test_scalar(*args):
     for item in args:
         isscalar = isscalar & np.isscalar(item)
     return isscalar
+
+    

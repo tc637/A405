@@ -3,9 +3,9 @@ to raise a figure that's buried under other windows:
 
 To see figure 1 from an ipython console session:
 
-> from a405utils.show_figure import show_plot as sp
+> from a405utils.show_figure import show_plot as sf
 
-> sp(1)
+> sf(1)
 
 """
 from matplotlib import pyplot as plt
