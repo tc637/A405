@@ -86,6 +86,7 @@ def parse_header(header_text):
     lon=float(lon)
     elev=float(elev)
     day,hour = string_time.strip().split('/')
+    print('here is the day: ',day)
     year=int(day[:2]) + 2000
     month=int(day[2:4])
     day=int(day[4:6])

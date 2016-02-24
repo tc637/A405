@@ -113,7 +113,7 @@ def makeSkewWet(ax, corners=[-30, 25], skew=30):
     #
     # contour rsat
     #
-    rsLabels = [0.1, 0.25, 0.5, 1, 2, 3] + list(range(4, 20, 2)) + [20, 24, 28]
+    rsLabels = [0.1, 0.25, 0.5, 1, 2, 3] + list(range(4, 28, 2)) #+ [26,  28]
     rsLevs = ax.contour(xplot,
                         yplot,
                         the_rsat * 1.e3,
