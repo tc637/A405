@@ -1,0 +1,39 @@
+!!omap
+- initial_conditions: !!omap
+  
+# initial temp, K
+  - Tinit: 280.0
+  
+# initial height, m
+  - Zinit: 1000.0
+  
+# initial pressure, Pa
+  - Pinit: 90000.0
+  
+# ininital saturation
+  - Sinit: 0.995
+  
+# updraft velocity m/s  
+  - wvel: 0.5
+- aerosol: !!omap
+  
+# molecular weight of solute kg/kmole
+  - Ms: 114
+  
+# molecuar weith of water kg/kmole
+  - Mw: 18.0
+  
+# surface energy J/m^2
+  - Sigma: 0.075
+  
+# van hoft factor
+  - vanHoff: 2.0
+  
+# aerosol density kg/m^3  
+  - rhoaero: 1775
+#geometric mean aerosol mass, kg    
+  - themean: 2.0e-17
+#aerosol standard deviation
+  - sd: 1.7
+#total aerosol mass concentration, kg/m^3
+  - totmass: 1.5e-09
