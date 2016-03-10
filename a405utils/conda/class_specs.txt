@@ -1,13 +1,5 @@
-# bare_specs_sub.txt
-# This file may be used to create an environment using:
-
-# $ conda create --name <env> --file <this file>
-
-# platform: osx-64
-
 alabaster
 anaconda-client
-appnope
 beautifulsoup4
 cython
 dask
@@ -37,7 +29,6 @@ openpyxl
 openssl
 pandas
 pep8
-pexpect
 pillow
 pip
 pyflakes
@@ -50,7 +41,6 @@ pyyaml
 pyzmq
 qt
 qtconsole
-readline
 requests
 scipy
 seaborn
@@ -63,3 +53,5 @@ xarray
 yaml
 zeromq
 zlib
+anaconda-client
+netcdf4
