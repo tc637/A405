@@ -1,4 +1,13 @@
 !!omap
+# filename for pandas output
+- output_file: outfile.h5
+# name of pandas dataframe in output_file
+- frame_name: dump_run  
+#
+# true will overwrite outfile.h5
+#
+- dump_output: True
+  
 - initial_conditions: !!omap
   
 # initial temp, K
