@@ -31,9 +31,11 @@ To reinstall conda from scratch with the A405 packages:
    to get the packages
 
 5. The following packages are not available from conda -- use pip:
-
+   
+   ```
    pip install ruamel.yaml
    pip install tzlocal
+   ```
    
 6. To get a list of packages that you've installed using conda and pip
    cd to the folder containing this readme and do:
