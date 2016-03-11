@@ -5,7 +5,7 @@ import ruamel.yaml as ry
 import a405dropgrow.aerolib
 from importlib import reload
 reload(a405dropgrow.aerolib)
-from a405dropgrow.aerolib import lognormal,create_koehler,find_koehler_coeffs
+from a405dropgrow.aerolib import lognormal,create_koehler
 import numpy as np
 import a405utils.helper_funs
 reload(a405utils.helper_funs)
@@ -17,8 +17,9 @@ from collections import OrderedDict as od
 from scipy.integrate import odeint
 import pandas as pd
 from matplotlib import pyplot as plt
+import ruamel.yaml, h5py, datetime
 
-def find_diff(logr,S_target,m):
+def find_diff(logr,S_target,m, koehler_fun):
     """
     zero function for rootfinder
 
@@ -31,6 +32,9 @@ def find_diff(logr,S_target,m):
           Satutation ratio to match
     m: float
       aerosol mass (kg)
+    
+    koehler_fun: function
+       function that returns S as function of radius (m) and aerosol mass (kg)
 
     Returns
     -------
@@ -44,7 +48,7 @@ def find_diff(logr,S_target,m):
 
 def wlcalc(var_vec,cloud_tup):
     """
-    calculate the liquid water for the distribution
+    calculate the liquid water by integrating n(r)r**3
 
     Parameters
     ----------
@@ -61,7 +65,9 @@ def wlcalc(var_vec,cloud_tup):
 
 def Scalc(var_vec,cloud_tup):
     """
-    calculate the environmental saturation
+    calculate the environmental saturation using conservation
+    of total water mixing ratio cloud_top.wt and the current
+    value of the liquid water mixing ratio wl
 
     Parameters
     ----------
@@ -115,6 +121,9 @@ def find_derivs(var_vec,the_time,cloud_tup):
     numrads = len(var_vec) - 3
     dry_radius = cloud_tup.dry_radius
     rho=press/(c.Rd*temp)
+    #
+    # find the evironmental S by water balance
+    #
     S=Scalc(var_vec,cloud_tup)
     deriv_vec=np.zeros_like(var_vec)
     #dropgrow notes equaton 18 (W&H p. 170)
@@ -122,18 +131,29 @@ def find_derivs(var_vec,the_time,cloud_tup):
         m=cloud_tup.masses[i]
         if var_vec[i] < dry_radius[i]:
             var_vec[i] = dry_radius[i]
-        Seq=koehler_fun(var_vec[i],m)
+        Seq=cloud_tup.koehler_fun(var_vec[i],m)  
         rhovr=(Seq*find_esat(temp))/(c.Rv*temp)
         rhovinf=S*find_esat(temp)/(c.Rv*temp)
+        #day 25 drop_grow.pdf eqn. 18
         deriv_vec[i]=(c.D/(var_vec[i]*c.rhol))*(rhovinf - rhovr)
-    deriv_vec[-3]=find_lv(temp)/c.cpd*wlderiv(var_vec,deriv_vec,cloud_tup) - c.g0/c.cpd*parcel.wvel
-    deriv_vec[-2]= -1.*rho*c.g0*parcel.wvel
-    deriv_vec[-1] = parcel.wvel
+    #
+    # moist adiabat day 25 equation 21a
+    #
+    deriv_vec[-3]=find_lv(temp)/c.cpd*wlderiv(var_vec,deriv_vec,cloud_tup) - c.g0/c.cpd*cloud_tup.wvel
+    #
+    # hydrostatic balance  dp/dt = -rho g dz/dt
+    #
+    deriv_vec[-2]= -1.*rho*c.g0*cloud_tup.wvel
+    #
+    # how far up have we traveled?
+    #
+    deriv_vec[-1] = cloud_tup.wvel
     return deriv_vec
 
 def wlderiv(var_vec,deriv_vec,cloud_tup):
     """
     calculate the time derivative of the liquid water content
+    using drop_grow.pdf eqn 21b
     
     Parameters
     ----------
@@ -161,9 +181,12 @@ def wlderiv(var_vec,deriv_vec,cloud_tup):
 
 
 if __name__ == "__main__":
-    
-    infile = 'dropgrow.yaml'
-    with open(infile,'r') as f:
+
+    from pathlib import Path
+    util_dir, = a405utils.__path__._path
+    data_dir = Path(util_dir).joinpath('../data')
+    yaml_file = data_dir.joinpath('dropgrow.yaml')
+    with yaml_file.open('r') as f:
         input_dict=ry.load(f,Loader=ry.RoundTripLoader)
     #
     #set the edges of the mass bins
@@ -188,16 +211,6 @@ if __name__ == "__main__":
     aero=make_tuple(input_dict['aerosol'])
     parcel=make_tuple(input_dict['initial_conditions'])
 
-    a, b = find_koehler_coeffs(aero,parcel)
-
-    #
-    # sanity check
-    #
-    m=1.e-18
-    Scrit=(4.*a**3./(27.*b*m))**0.5;
-    rcrit = (3.*m*b/a)**0.5
-    print("for aerosol with mass = {} kg, Scrit,rcrit are {}, {} microns".format(m,Scrit,rcrit))
-
     koehler_fun = create_koehler(aero,parcel)
 
     S_target = parcel.Sinit
@@ -206,26 +219,21 @@ if __name__ == "__main__":
     initial_radius = []
     dry_radius = []
     for mass in center_mass:
-        brackets = np.array(find_interval(find_diff,logr_start,S_target,mass))
+        brackets = np.array(find_interval(find_diff,logr_start,S_target,mass,koehler_fun))
         left_bracket, right_bracket = np.exp(brackets)*1.e6  #get brackets in microns for printing
-        equil_rad = np.exp(fzero(find_diff,brackets,S_target,mass))
+        equil_rad = np.exp(fzero(find_diff,brackets,S_target,mass,koehler_fun))
 
-        Scrit=(4.*a**3./(27.*b*mass))**0.5
-        
         initial_radius.append(equil_rad)
         dry_rad = (mass/(4./3.*np.pi*aero.rhoaero))**(1./3.)
         dry_radius.append(dry_rad)
 
-        print(('mass = {mass:6.3g} kg\n'
-               'left bracket = {left_bracket:8.3e} microns\n'
-               'right bracket={right_bracket:8.3e} microns\n'
-               'critical supersaturation: {Scrit:6.3g}')
-               .format_map(locals()))
+        print('mass = {mass:6.3g} kg\n'.format_map(locals()))
         print('equlibrium radius at S={} is {:5.3f} microns\n'.format(S_target,equil_rad*1.e6))
 
     cloud_vars['initial_radiius'] = initial_radius
     cloud_vars['dry_radius'] = dry_radius
     cloud_vars['masses'] = center_mass
+    cloud_vars['koehler_fun'] = koehler_fun
     numrads = len(initial_radius)
     var_vec = np.empty(numrads + 3)
     for i in range(numrads):
@@ -239,31 +247,26 @@ if __name__ == "__main__":
     #calculate the total water (kg/kg)
     wl=wlcalc(var_vec,cloud_tup);
     e=parcel.Sinit*find_esat(parcel.Tinit);
-    wv=c.eps*e/(parcel.Pinit - e);
+    wv=c.eps*e/(parcel.Pinit - e)
     #save total water
-    cloud_vars['wt'] = wv + wl;
+    cloud_vars['wt'] = wv + wl
+    cloud_vars['wvel'] = parcel.wvel
     
     cloud_tup= make_tuple(cloud_vars)
 
-    tinit=0
-    # r = ode(find_derivs).set_integrator('dopri5')
-    # r.set_f_params(cloud_tup)
-    # r.set_initial_value(var_vec, tinit)
-
     var_out = []
     time_out =[]
-    dt = 10
-    tfin = 300
+    
+    tinit=input_dict['integration']['dt']
+    dt = input_dict['integration']['dt']
+    tfin = input_dict['integration']['tend']
+    
     t = np.arange(0,tfin,dt)
     sol = odeint(find_derivs,var_vec, t, args=(cloud_tup,))
     colnames = ["r{}".format(item) for item in range(30)]
     colnames.extend(['temp','press','z'])
     output = pd.DataFrame.from_records(sol,columns = colnames)
 
-    if input_dict['dump_output']:
-        with pd.HDFStore(input_dict['output_file'],'w') as store:
-            store.put(input_dict['frame_name'],output,format='table')
-            
     plt.close('all')
     fig, ax = plt.subplots(1,1)
     for i in colnames[:-3]:
@@ -271,3 +274,16 @@ if __name__ == "__main__":
         #ax.plot(i,'z',data=output)
     plt.show()
     
+    if input_dict['dump_output']:
+        with pd.HDFStore(input_dict['output_file'],'w') as store:
+            store.put(input_dict['frame_name'],output,format='table')
+            
+        yaml_string = ruamel.yaml.dump(input_dict,None,Dumper=ruamel.yaml.RoundTripDumper,
+                               default_flow_style=False)
+
+        with h5py.File(input_dict['output_file'],'a') as f:
+            f.attrs['yaml_string']=yaml_string
+            date=datetime.datetime.now().strftime('%Y-%M-%d')
+            history ="file produced by drop_grow.py on {}".format(date)
+            print('history: ',history)
+            f.attrs['history']=history

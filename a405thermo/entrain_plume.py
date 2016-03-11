@@ -1,3 +1,6 @@
+"""
+model a bulk entraining plume with constant entrainment rate
+"""
 import numpy as np
 import pandas as pd
 import h5py

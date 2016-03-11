@@ -1,3 +1,7 @@
+"""
+calculate lognormal aerosol mass/number distributions
+"""
+
 import numpy as np
 from a405thermo.constants import constants as c
 
