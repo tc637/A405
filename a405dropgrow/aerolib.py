@@ -4,6 +4,8 @@ from a405thermo.constants import constants as c
 
 def lognormal(x,mu,sigma):
     """
+    Calculate lognormal distribution for variable x
+
     parameters
     ----------
     x: vector (float)  
@@ -19,8 +21,8 @@ def lognormal(x,mu,sigma):
     -------
     
     out: vector (float)
-        lognormal pdf, normalized to 1
-        units
+        lognormal pdf, normalized to 1 (units: 1/[x], where [x] are the units of x)
+
     
     """
     out=(1/(x*sigma*np.sqrt(2*np.pi)))*np.exp(-(np.log(x) - mu)**2./(2*sigma**2.))
@@ -29,22 +31,25 @@ def lognormal(x,mu,sigma):
 
 def create_koehler(aero,parcel):
     """
-    generate a kohler function for specific
-    values of the a,b coefficients
+    generate a koehler function for specific aerosol/parcel conditions
 
     Parameters
     ----------
 
-    a: float (m)
-      kelvin term in kohler equation
-    b: float (m^3/kg)
-      solution term in kohler equation, needs to 
-      be multiplied by aerosol mass
+    aero: namedtuple
+      constants used for the aerosol terms in the Koehler equation
+
+    parcel: namedtjuple
+          constants used for the thermodynmaic terms in the 
+          droplet growth/Koehler equations
 
     Returns
     -------
 
-    Koheler function(r,m)
+    find_S: function
+          function to find saturation over curved solution
+
+
     """
     def find_S(r,m):
         """
@@ -76,8 +81,30 @@ def create_koehler(aero,parcel):
 
 def find_koehler_coeffs(aero,parcel):
     """
-    given named tuples with the aerosol and parcel
-    variables, find the a and b coefficients for the approximate koehler equation
+
+    Returns the a, b coefficients for the approximate Koehler eqn
+
+    Parameters
+    ----------
+
+    aero: namedtuple
+      constants used for the aerosol terms in the Koehler equation
+
+    parcel: namedtjuple
+          constants used for the thermodynmaic terms in the 
+          droplet growth/Koehler equations
+
+    Returns
+    -------
+
+    a: float
+       coefficient for a/r term (m)
+
+    b: float
+       coefficient for b*m/r^3 term (m^3/kg)
+
+
+
     """
     a=(2.*aero.Sigma)/(c.Rv*parcel.Tinit*c.rhol)  #curvature term
     b=(aero.vanHoff*aero.Mw)/((4./3.)*np.pi*c.rhol*aero.Ms)  #solution term, no mass
