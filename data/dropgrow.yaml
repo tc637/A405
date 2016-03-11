@@ -1,4 +1,13 @@
 !!omap
+# filename for pandas output
+- output_file: outfile.h5
+# name of pandas dataframe in output_file
+- frame_name: dump_run  
+#
+# if dump_output=True will overwrite outfile.h5
+#
+- dump_output: True
+  
 - initial_conditions: !!omap
   
 # initial temp, K
@@ -37,3 +46,15 @@
   - sd: 1.7
 #total aerosol mass concentration, kg/m^3
   - totmass: 1.5e-09
+
+- integration: !!omap
+
+  #start time (seconds)
+  - tstart: 0
+
+  #end time (seconds)
+  - tend: 200
+
+  #output time interval (seconds)
+  - dt: 1   
+  

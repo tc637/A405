@@ -1,3 +1,7 @@
+"""
+calculate lognormal aerosol mass/number distributions
+"""
+
 import numpy as np
 from a405thermo.constants import constants as c
 
@@ -68,8 +72,8 @@ def create_koehler(aero,parcel):
         #
         # reset negative radii to 0.001 micron
         #
-        if r < 0.:
-            r = 1.e-9
+        # if r < 0.:
+        #     r = 1.e-9
         # use exact koehler equation
         #
         a=(2.*aero.Sigma)/(c.Rv*parcel.Tinit*c.rhol)  #curvature term
