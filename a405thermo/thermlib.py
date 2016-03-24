@@ -718,8 +718,7 @@ def tinvert_thetae(thetaeVal, rT, press):
     --------
 
     >>> tinvert_thetae(300., 0.001, 8.e4)
-    (278.4050485684102, 0.001, 0)
-    
+    (278.683729619619, 0.001, 0)
     """
     if press > 1.e5:
         raise IOError('expecting pressure level less than 100000 Pa')
@@ -766,7 +765,7 @@ def find_resid_thetae(Tguess, thetaeVal, rT, press):
     tdGuess = find_Td(rv, press)
     # Iterate on Tguess until this function is
     # zero to within tolerance.
-    return thetaeVal - find_thetaep(tdGuess, Tguess, press)
+    return thetaeVal - find_thetaet(tdGuess,rT, Tguess, press)
 
 
 def find_buoy(adia_Tv,env_Tv):
