@@ -3,7 +3,17 @@
 """
 import numpy as np
 from scipy import optimize
+from a405utils.helper_funs import make_tuple
 
+class BracketError(ValueError):
+    """
+    subclass ValueError so that I can add extra debugging
+    information as the new member variable extra_info
+    """
+    def __init__(self,*args,**kwargs):
+        super()  #call the base class constructor
+        if 'extra_info' in kwargs:
+            self.extra_info = kwargs['extra_info']
 
 def find_interval(the_func, x, *args):
     """
@@ -47,7 +57,12 @@ def find_interval(the_func, x, *args):
             failed = False
             break
     if failed:
-        raise ValueError("Couldn't find a suitable range.")
+        #
+        # load the debugging information into the BracketError exception as a
+        # namedtuple
+        #
+        extra_info = make_tuple(dict(a=a,b=b,fa=fa,fb=fb,x=x,dx=dx,args=args))
+        raise BracketError("Couldn't find a suitable range. Providing extra_info",extra_info=extra_info)
     return (a, b)
 
 

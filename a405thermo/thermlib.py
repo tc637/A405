@@ -10,7 +10,7 @@ import doctest
 from a405thermo.constants import constants as c
 from a405thermo import rootfinder as rf
 import numpy.testing as ntest
-np.set_printoptions(precision=4)
+from a405thermo.rootfinder import BracketError
 
 
 def find_lv(temp):
@@ -291,7 +291,7 @@ def convertSkewToTemp(xcoord, press, skew):
 
 def find_thetaes(Temp, press):
     """
-    Calculates the pseudo equivalent potential temperature of an air
+    Calculates the true equivalent potential temperature of an air
     parcel assuming saturation
 
     Parameters
@@ -322,15 +322,12 @@ def find_thetaes(Temp, press):
     --------
 
     >>> find_thetaes(300., 8.e4)
-    412.97362667593831
-
+    399.53931578042267
     """
     # The parcel is saturated - prohibit supersaturation with Td > T.
-    Tlcl = Temp
-    rv = find_rsat(Temp, press)
-    thetaval = find_theta(Temp, press, rv)
-    thetaep = thetaval * np.exp(rv * (1 + 0.81 * rv) * \
-                                (3376. / Tlcl - 2.54))
+    Td = Temp
+    rv = find_rsat(Td, press)
+    thetaep = find_thetaet(Td,rv,Temp,press)
     #
     # peg this at 450 so rootfinder won't blow up
     #
@@ -426,10 +423,20 @@ def find_thetaet(Td, rt, T, p):
         rv = find_rsat(T, p)
     e = find_esat(Td)
     esat = find_esat(T)
+    vapor_term = rv*c.Rv*np.log(e/esat)
+    #
+    # turn off water vapor if not in liquid water saturation
+    # domain
+    #
+    if np.isinf(vapor_term) or (e > 1.e5) or (esat > 1.e5) \
+       or (e < 1) or (esat < 1):
+        vapor_term = 0
+        e=0
+    #print('thetaet: ',e,esat,T,Td,p,vapor_term)
     pd = p - e  # dry 
     cp = c.cpd + rt*c.cl
     lv = find_lv(T)
-    s = cp*np.log(T) - c.Rd*np.log(pd) + lv*rv/T - rv*c.Rv*np.log(e/esat)
+    s = cp*np.log(T) - c.Rd*np.log(pd) + lv*rv/T - vapor_term
     logthetae = (s + c.Rd*np.log(c.p0))/cp
     thetaet = np.exp(logthetae)
     #
@@ -437,13 +444,15 @@ def find_thetaet(Td, rt, T, p):
     #
     if (thetaet > 450.):
         thetaet = 450
+    if (thetaet < 100.):
+        thetaet = 100.
     return thetaet
 
 
 def find_thetaep(Td, T, p):
     """
     Calculates the pseudo equivalent potential temperature of a
-    parcel. 
+    parcel using Bolton's formula
 
 
     Parameters
@@ -479,11 +488,23 @@ def find_thetaep(Td, T, p):
 
     Examples
     --------
+    # note difference between true thetae (find_thetaes and find_thetaet)
+    # and pseudo-adiabat (find_thetaep)
+
     >>> find_thetaep(280., 300., 8.e4) # Parcel is unsaturated.
     344.99830738253371
 
-    >>> find_thetaep(300., 280., 8.e4) # Parcel is saturated.
+    >>> rt = find_rsat(280, 8.e4)
+    >>> find_thetaet(280., rt, 300., 8.e4) # Parcel is unsaturated.
+    342.93068265625539
+
+
+    >>> find_thetaep(280., 280., 8.e4) # Parcel is saturated.
     321.5302927767795
+
+
+    >>> find_thetaes(280., 8.e4) # Parcel is saturated.
+    319.72687107952828
 
     """
     if Td < T:
@@ -641,22 +662,24 @@ def find_Tmoist(thetaE0, press):
 
     Examples
     --------
-    >>> find_Tmoist(300., 8.e4)
-    270.59590841970277
-    
-    >>> find_Tmoist(330., 800)
-    290.98965468303
-
+    >>> np.array([find_Tmoist(300., 8.e4)])
+    array([ 271.0638])
+    >>> find_Tmoist(330., 8.e4)
+    283.7226584032411
     """
     Tstart = c.Tc
-    brackets = rf.find_interval(thetaes_diff, Tstart, thetaE0, press)
-    Temp = rf.fzero(thetaes_diff, brackets, thetaE0, press)
+    try:
+        brackets = rf.find_interval(thetaes_diff, Tstart, thetaE0, press)
+        Temp = rf.fzero(thetaes_diff, brackets, thetaE0, press)
+    except BracketError as e:
+        print("couldn't find bracket: debug info: ",e.extra_info)
+        Temp = np.nan
     return Temp
 
 
 def thetaes_diff(Tguess, thetaE0, press):
     """
-    Evaluates the equation and passes it back to brenth.
+    use true thetae (thetaes) for rootfinder
 
     Parameters
     ----------
@@ -680,6 +703,34 @@ def thetaes_diff(Tguess, thetaE0, press):
     #when this result is small enough we're done
     the_diff = thetaes_guess - thetaE0
     return the_diff
+
+def thetaep_diff(Tguess, thetaE0, press):
+    """
+    use pseudo thetae (thetaep) for rootfinder
+
+    Parameters
+    ----------
+    Tguess : float
+        Trial temperature value (K).
+    ws0 : float
+        Initial saturated mixing ratio (kg/kg).
+    press : float
+        Pressure (Pa).
+
+    Returns
+    -------
+    theDiff : float
+        The difference between the values of 'thetaEguess' and
+        'thetaE0'. This difference is then compared to the tolerance
+        allowed by brenth.
+        
+    """
+    thetaes_guess = find_thetaep(Tguess,Tguess, press)
+
+    #when this result is small enough we're done
+    the_diff = thetaes_guess - thetaE0
+    return the_diff
+
 
 
 def tinvert_thetae(thetaeVal, rT, press):
@@ -718,8 +769,7 @@ def tinvert_thetae(thetaeVal, rT, press):
     --------
 
     >>> tinvert_thetae(300., 0.001, 8.e4)
-    (278.4050485684102, 0.001, 0)
-    
+    (278.683729619619, 0.001, 0)
     """
     if press > 1.e5:
         raise IOError('expecting pressure level less than 100000 Pa')
@@ -766,7 +816,7 @@ def find_resid_thetae(Tguess, thetaeVal, rT, press):
     tdGuess = find_Td(rv, press)
     # Iterate on Tguess until this function is
     # zero to within tolerance.
-    return thetaeVal - find_thetaep(tdGuess, Tguess, press)
+    return thetaeVal - find_thetaet(tdGuess,rT, Tguess, press)
 
 
 def find_buoy(adia_Tv,env_Tv):
@@ -856,14 +906,15 @@ def test_therm():
         321.53029,
         decimal=5)  # Parcel is saturated.
     ntest.assert_almost_equal(find_esat(300.), 3534.51966, decimal=2)
-    ntest.assert_almost_equal(find_thetaes(300., 8.e4), 412.9736, decimal=4)
+    ntest.assert_almost_equal(find_thetaes(300., 8.e4), 399.53931, decimal=4)
     ntest.assert_allclose(find_esat([300., 310.]), [3534.51966, 6235.53218])
-    ntest.assert_almost_equal(find_Tmoist(300., 8.e4), 270.59590841970277)
-    ntest.assert_almost_equal(find_Tmoist(330., 8.e4), 282.92999, decimal=4)
+    ntest.assert_almost_equal(find_Tmoist(300., 8.e4), 271.063785,decimal=4)
+    ntest.assert_almost_equal(find_Tmoist(330., 8.e4), 283.722658, decimal=4)
     ntest.assert_almost_equal(find_Tv(300.,1.e-2),301.866,decimal=3)
     ntest.assert_almost_equal(find_Tv(280.,1.e-2, 1.e-3),281.4616,decimal=3)
 
 
 if __name__ == "__main__":
+    np.set_printoptions(precision=4)
     test_therm()
     doctest.testmod()

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import a405thermo.thermlib
 reload(a405thermo.thermlib)
-from a405thermo.thermlib import convertTempToSkew, convertSkewToTemp, find_theta, find_thetaes
+from a405thermo.thermlib import convertTempToSkew, convertSkewToTemp, find_theta, find_thetaet
 from a405thermo.constants import constants as c
 from a405thermo.thermlib import find_rsat
 
@@ -64,9 +64,9 @@ def makeSkewWet(ax, corners=[-30, 25], skew=30):
            the modified figure axis
 
       """
-    yplot = range(1000, 190, -10)  #
+    yplot = range(1000, 190, -6)  #
     xcorners = find_corners(corners, skew=skew)
-    xplot = list(np.linspace(xcorners[0], xcorners[1], 35))
+    xplot = list(np.linspace(xcorners[0], xcorners[1], 45))
     pvals = np.size(yplot)
     tvals = np.size(xplot)
     temp = np.zeros([pvals, tvals])
@@ -93,8 +93,9 @@ def makeSkewWet(ax, corners=[-30, 25], skew=30):
             Tk = c.Tc + temp[iInd, jInd]
             pressPa = presshPa * 100.
             theTheta[iInd, jInd] = find_theta(Tk, pressPa)
-            the_rsat[iInd, jInd] = find_rsat(Tk, pressPa)
-            theThetae[iInd, jInd] = find_thetaes(Tk, pressPa)
+            rs = find_rsat(Tk, pressPa)
+            the_rsat[iInd, jInd] = rs
+            theThetae[iInd, jInd] = find_thetaet(Tk,rs,Tk, pressPa)
     #
     # Contour the temperature matrix.
     #
@@ -192,9 +193,9 @@ def plot_test():
       create test plot when module is run
       """
     fig, ax = plt.subplots(1, 1)
-    corners = [-10, 25]
+    corners = [-25, 30]
     ax, skew = makeSkewWet(ax, corners=corners, skew=25)
-    figname = 'plot_test_wet.png'
+    figname = 'plot_test_wet.pdf'
     fig.canvas.print_figure(figname)
     print('created {}'.format(figname))
     return ax
