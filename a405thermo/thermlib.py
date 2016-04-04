@@ -42,7 +42,7 @@ def find_lv(temp):
 
     Day 13 moist static energy notes
     """
-    lv = c.lv0 - (c.cpv - c.cl)*(temp - c.Tc)
+    lv = c.lv0 - (c.cpv - c.cl) * (temp - c.Tc)
     return lv
 
 
@@ -327,13 +327,14 @@ def find_thetaes(Temp, press):
     # The parcel is saturated - prohibit supersaturation with Td > T.
     Td = Temp
     rv = find_rsat(Td, press)
-    thetaep = find_thetaet(Td,rv,Temp,press)
+    thetaep = find_thetaet(Td, rv, Temp, press)
     #
     # peg this at 450 so rootfinder won't blow up
     #
     if thetaep > 450.:
         thetaep = 450
     return thetaep
+
 
 def find_Tv(temp, rvap, rl=0.):
     """
@@ -370,7 +371,8 @@ def find_Tv(temp, rvap, rl=0.):
     >>> find_Tv(280.,1.e-2, 1.e-3)  #Parcel is saturated
     281.4616
     """
-    return temp*(1 + c.eps*rvap - rl)
+    return temp * (1 + c.eps * rvap - rl)
+
 
 def find_thetaet(Td, rt, T, p):
     """
@@ -419,11 +421,11 @@ def find_thetaet(Td, rt, T, p):
         rv = find_rsat(Td, p)
     else:
         #parcel is saturated -- prohibit supersaturation with Td > T
-        Td=T
+        Td = T
         rv = find_rsat(T, p)
     e = find_esat(Td)
     esat = find_esat(T)
-    vapor_term = rv*c.Rv*np.log(e/esat)
+    vapor_term = rv * c.Rv * np.log(e / esat)
     #
     # turn off water vapor if not in liquid water saturation
     # domain
@@ -431,13 +433,13 @@ def find_thetaet(Td, rt, T, p):
     if np.isinf(vapor_term) or (e > 1.e5) or (esat > 1.e5) \
        or (e < 1) or (esat < 1):
         vapor_term = 0
-        e=0
+        e = 0
     #print('thetaet: ',e,esat,T,Td,p,vapor_term)
-    pd = p - e  # dry 
-    cp = c.cpd + rt*c.cl
+    pd = p - e  # dry
+    cp = c.cpd + rt * c.cl
     lv = find_lv(T)
-    s = cp*np.log(T) - c.Rd*np.log(pd) + lv*rv/T - vapor_term
-    logthetae = (s + c.Rd*np.log(c.p0))/cp
+    s = cp * np.log(T) - c.Rd * np.log(pd) + lv * rv / T - vapor_term
+    logthetae = (s + c.Rd * np.log(c.p0)) / cp
     thetaet = np.exp(logthetae)
     #
     # peg this at 450 so rootfinder won't blow up
@@ -672,7 +674,7 @@ def find_Tmoist(thetaE0, press):
         brackets = rf.find_interval(thetaes_diff, Tstart, thetaE0, press)
         Temp = rf.fzero(thetaes_diff, brackets, thetaE0, press)
     except BracketError as e:
-        print("couldn't find bracket: debug info: ",e.extra_info)
+        print("couldn't find bracket: debug info: ", e.extra_info)
         Temp = np.nan
     return Temp
 
@@ -704,6 +706,7 @@ def thetaes_diff(Tguess, thetaE0, press):
     the_diff = thetaes_guess - thetaE0
     return the_diff
 
+
 def thetaep_diff(Tguess, thetaE0, press):
     """
     use pseudo thetae (thetaep) for rootfinder
@@ -725,12 +728,11 @@ def thetaep_diff(Tguess, thetaE0, press):
         allowed by brenth.
         
     """
-    thetaes_guess = find_thetaep(Tguess,Tguess, press)
+    thetaes_guess = find_thetaep(Tguess, Tguess, press)
 
     #when this result is small enough we're done
     the_diff = thetaes_guess - thetaE0
     return the_diff
-
 
 
 def tinvert_thetae(thetaeVal, rT, press):
@@ -816,10 +818,10 @@ def find_resid_thetae(Tguess, thetaeVal, rT, press):
     tdGuess = find_Td(rv, press)
     # Iterate on Tguess until this function is
     # zero to within tolerance.
-    return thetaeVal - find_thetaet(tdGuess,rT, Tguess, press)
+    return thetaeVal - find_thetaet(tdGuess, rT, Tguess, press)
 
 
-def find_buoy(adia_Tv,env_Tv):
+def find_buoy(adia_Tv, env_Tv):
     """
     Calculates the buoyancy given an parcel and environment virtural temp
 
@@ -849,8 +851,62 @@ def find_buoy(adia_Tv,env_Tv):
     Thompkins equation 3.3
     
     """
-    buoy=c.g0*(adia_Tv - env_Tv)/env_Tv
+    buoy = c.g0 * (adia_Tv - env_Tv) / env_Tv
     return buoy
+
+
+def find_thetal(press, temp, rt):
+    """
+    Calculates the true equivalent potential temperature of an air
+    parcel assuming saturation
+
+    Parameters
+    ----------
+    temp : float
+        Temperature (K).
+    press : float
+        Pressure (Pa).
+
+    rt : float
+       mixing ratio  (kg/kg
+
+    Returns
+    ----
+    thetal : float
+        liquid water potential temperature (K).
+
+
+    Notes
+    -----
+    Empirical fit 
+
+
+    References
+    ----------
+    Emanuel 4.5.15 p. 121
+
+    """
+
+    press = np.atleast_1d(press)
+    temp = np.atleast_1d(temp)
+    rt = np.atleast_1d(rt)
+    rsat = find_rsat(Temp, press)
+    CPn = c.RD + rt * c.RV
+    chi = CPn / (c.cpd + rt * c.cpv)
+    gamma = (rt * c.RV) / CPn
+    rl = np.empty(rt.shape, dtype=np.float)
+    saturated = rt > rsat
+    rl[saturated] = rt[saturated] - rsat[saturated]
+    unsaturated = np.logical_not(saturated)
+    rl[unsaturated] = 0
+    lv = find_lv(temp)
+    theta = temp * (c.p0 / press)**chi
+    term1 = (1. - rl / (c.eps + rt))**chi
+    term2 = (1 - rl / rt)**(-gamma)
+    term3 = -lv * rl / (CPn * temp)
+    term3 = np.exp(term3)
+    theThetal = theta * term1 * term2 * term3
+    return theThetal
 
 
 def find_Td(rv, press):
@@ -908,10 +964,10 @@ def test_therm():
     ntest.assert_almost_equal(find_esat(300.), 3534.51966, decimal=2)
     ntest.assert_almost_equal(find_thetaes(300., 8.e4), 399.53931, decimal=4)
     ntest.assert_allclose(find_esat([300., 310.]), [3534.51966, 6235.53218])
-    ntest.assert_almost_equal(find_Tmoist(300., 8.e4), 271.063785,decimal=4)
+    ntest.assert_almost_equal(find_Tmoist(300., 8.e4), 271.063785, decimal=4)
     ntest.assert_almost_equal(find_Tmoist(330., 8.e4), 283.722658, decimal=4)
-    ntest.assert_almost_equal(find_Tv(300.,1.e-2),301.866,decimal=3)
-    ntest.assert_almost_equal(find_Tv(280.,1.e-2, 1.e-3),281.4616,decimal=3)
+    ntest.assert_almost_equal(find_Tv(300., 1.e-2), 301.866, decimal=3)
+    ntest.assert_almost_equal(find_Tv(280., 1.e-2, 1.e-3), 281.4616, decimal=3)
 
 
 if __name__ == "__main__":
