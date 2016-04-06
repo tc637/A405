@@ -886,27 +886,16 @@ def find_thetal(press, temp, rt):
     Emanuel 4.5.15 p. 121
 
     """
-
-    press = np.atleast_1d(press)
-    temp = np.atleast_1d(temp)
-    rt = np.atleast_1d(rt)
-    rsat = find_rsat(Temp, press)
-    CPn = c.RD + rt * c.RV
-    chi = CPn / (c.cpd + rt * c.cpv)
-    gamma = (rt * c.RV) / CPn
-    rl = np.empty(rt.shape, dtype=np.float)
+    rsat = find_rsat(temp, press)
     saturated = rt > rsat
-    rl[saturated] = rt[saturated] - rsat[saturated]
-    unsaturated = np.logical_not(saturated)
-    rl[unsaturated] = 0
+    if saturated:
+        rl = rt - rsat
+    else:
+        rl = 0.
     lv = find_lv(temp)
-    theta = temp * (c.p0 / press)**chi
-    term1 = (1. - rl / (c.eps + rt))**chi
-    term2 = (1 - rl / rt)**(-gamma)
-    term3 = -lv * rl / (CPn * temp)
-    term3 = np.exp(term3)
-    theThetal = theta * term1 * term2 * term3
-    return theThetal
+    theta = find_theta(temp, press)
+    thetal = theta * np.exp(-lv * rl / (c.cpd * temp))
+    return thetal
 
 
 def find_Td(rv, press):
