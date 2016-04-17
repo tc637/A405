@@ -233,6 +233,7 @@ def test_wyoming():
     #values=dict(region='nz',year='2013',month='2',start='0100',stop='2800',station='93417')
     #values=dict(region='naconf',year='2013',month='2',start='0100',stop='2800',station='71802')
     #values=dict(region='ant',year='2013',month='07',start='0100',stop='2800',station='89009')
+    values=dict(region='naconf',year='2015',month='7',start='1600',stop='1800',station='72451')
     
 #naconf, samer, pac, nz, ant, np, europe,africa, seasia, mideast
     url=url_template.format_map(values)
